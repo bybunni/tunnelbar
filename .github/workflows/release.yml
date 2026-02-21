@@ -43,7 +43,20 @@ jobs:
         run: .venv/bin/python setup.py py2app
 
       - name: Ad-hoc sign the app
-        run: codesign --force --deep --sign - dist/Tunnelbar.app
+        run: |
+          # Sign nested libraries/frameworks first (--deep is unreliable)
+          find dist/Tunnelbar.app/Contents/Frameworks \
+            \( -name "*.dylib" -o -name "*.so" \) 2>/dev/null | while read lib; do
+            codesign --force --sign - "$lib"
+          done
+          find dist/Tunnelbar.app/Contents/Frameworks -name "*.framework" \
+            -maxdepth 1 2>/dev/null | while read fw; do
+            codesign --force --sign - "$fw"
+          done
+          # Sign the main executable
+          codesign --force --sign - dist/Tunnelbar.app/Contents/MacOS/*
+          # Sign the top-level bundle
+          codesign --force --sign - dist/Tunnelbar.app
 
       - name: Verify build
         run: |
@@ -51,7 +64,8 @@ jobs:
           BUILT_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" dist/Tunnelbar.app/Contents/Info.plist)
           echo "Bundle version: $BUILT_VERSION"
           test "$BUILT_VERSION" = "${{ steps.version.outputs.version }}"
-          codesign --verify dist/Tunnelbar.app
+          codesign --verify --deep --strict dist/Tunnelbar.app
+          codesign -dvv dist/Tunnelbar.app 2>&1
 
       - name: Create zip archive
         run: |
@@ -66,7 +80,9 @@ jobs:
             ## Installation
             1. Download the zip below
             2. Extract and move `Tunnelbar.app` to `/Applications`
-            3. On first launch: right-click → Open to allow it past Gatekeeper
+            3. On first launch, macOS will block the app. To allow it:
+               - **macOS Sequoia (15+):** Open the app once (it will be blocked), then go to **System Settings → Privacy & Security**, scroll down, and click **"Open Anyway"**
+               - **macOS Sonoma (14):** Right-click the app → **Open** → click **Open** in the dialog
             4. Configure at `~/.config/tunnelbar/config.yaml`
 
             Requires macOS 14+ (Apple Silicon) and SSH configured in `~/.ssh/config`.
