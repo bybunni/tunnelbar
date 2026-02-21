@@ -48,15 +48,32 @@ class TunnelManager:
         info = self._tunnels.get(key)
         return info is not None and info.is_alive
 
-    def spawn(self, host: str, remote_port: int, local_port: int) -> str | None:
-        """Start an SSH tunnel.  Returns ``None`` on success, error string on failure."""
+    def find_by_local_port(self, local_port: int) -> TunnelKey | None:
+        """Return the key of an active tunnel bound to *local_port*, if any."""
+        for key, info in self._tunnels.items():
+            if info.local_port == local_port and info.is_alive:
+                return key
+        return None
+
+    def spawn(self, host: str, remote_port: int, local_port: int) -> tuple[str | None, TunnelKey | None]:
+        """Start an SSH tunnel.
+
+        Returns ``(error, displaced_key)`` — *error* is ``None`` on success,
+        *displaced_key* is the key of a tunnel that was killed to free the port.
+        """
         key: TunnelKey = (host, local_port)
+        displaced: TunnelKey | None = None
 
         if self.is_active(key):
-            return None  # already running
+            return None, None  # already running
 
-        if is_port_in_use(local_port):
-            return f"Port {local_port} is already in use by another process"
+        # If another of our tunnels holds this port, kill it first.
+        existing = self.find_by_local_port(local_port)
+        if existing is not None:
+            self.kill(existing)
+            displaced = existing
+        elif is_port_in_use(local_port):
+            return f"Port {local_port} is already in use by another process", None
 
         cmd = [
             _SSH_PATH,
@@ -78,9 +95,9 @@ class TunnelManager:
                 stderr=subprocess.PIPE,
             )
         except FileNotFoundError:
-            return "ssh command not found — is OpenSSH installed?"
+            return "ssh command not found — is OpenSSH installed?", displaced
         except OSError as exc:
-            return f"Failed to start ssh: {exc}"
+            return f"Failed to start ssh: {exc}", displaced
 
         self._tunnels[key] = TunnelInfo(
             host=host,
@@ -88,7 +105,7 @@ class TunnelManager:
             local_port=local_port,
             proc=proc,
         )
-        return None
+        return None, displaced
 
     def kill(self, key: TunnelKey) -> None:
         """Terminate a tunnel and wait briefly for cleanup."""

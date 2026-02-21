@@ -100,11 +100,16 @@ class TunnelbarApp(rumps.App):
                 self.manager.kill(key)
                 sender.state = False
             else:
-                error = self.manager.spawn(
+                error, displaced = self.manager.spawn(
                     host=server.host,
                     remote_port=port_entry.remote_port,
                     local_port=port_entry.local_port,
                 )
+                # Uncheck the menu item of any tunnel we displaced
+                if displaced is not None:
+                    displaced_item = self._menu_items.get(displaced)
+                    if displaced_item is not None:
+                        displaced_item.state = False
                 if error:
                     rumps.notification("Tunnelbar", "Tunnel Error", error)
                     sender.state = False
