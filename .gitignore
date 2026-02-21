@@ -5,5 +5,7 @@ __pycache__/
 dist/
 build/
 *.egg
+.eggs/
+*.iconset/
 .DS_Store
 /uv.lock

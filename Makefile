@@ -1,4 +1,4 @@
-.PHONY: install plist unplist
+.PHONY: install plist unplist app icns clean-app
 
 PLIST_NAME := com.tunnelbar.agent
 PLIST_DIR  := $(HOME)/Library/LaunchAgents
@@ -49,3 +49,15 @@ unplist:
 	-launchctl unload $(PLIST_FILE)
 	-rm -f $(PLIST_FILE)
 	@echo "Tunnelbar plist removed."
+
+icns:
+	bash scripts/make_icns.sh
+
+app: icns
+	uv sync --extra dev
+	$(PROJECT_DIR)/.venv/bin/python setup.py py2app
+	@echo "Built dist/Tunnelbar.app"
+
+clean-app:
+	-xattr -rc dist/ 2>/dev/null
+	rm -rf build/ dist/ .eggs/

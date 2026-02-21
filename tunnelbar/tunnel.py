@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 import subprocess
 from dataclasses import dataclass
 from typing import Optional
@@ -11,6 +12,8 @@ from .config import TunnelKey
 from .ports import is_port_in_use
 
 log = logging.getLogger(__name__)
+
+_SSH_PATH = shutil.which("ssh") or "/usr/bin/ssh"
 
 
 @dataclass
@@ -56,7 +59,7 @@ class TunnelManager:
             return f"Port {local_port} is already in use by another process"
 
         cmd = [
-            "ssh",
+            _SSH_PATH,
             "-N",
             "-o", "BatchMode=yes",
             "-o", "ExitOnForwardFailure=yes",

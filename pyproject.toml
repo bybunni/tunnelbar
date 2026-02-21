@@ -15,5 +15,8 @@ dependencies = [
 [project.scripts]
 tunnelbar = "tunnelbar.app:main"
 
+[project.optional-dependencies]
+dev = ["py2app>=0.28.9"]
+
 [tool.setuptools.package-data]
-tunnelbar = ["resources/*.png"]
+tunnelbar = ["resources/*.png", "resources/*.icns"]

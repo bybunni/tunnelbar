@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -11,7 +12,26 @@ import yaml
 
 CONFIG_DIR = Path.home() / ".config" / "tunnelbar"
 CONFIG_PATH = CONFIG_DIR / "config.yaml"
-EXAMPLE_CONFIG = Path(__file__).resolve().parent.parent / "config.example.yaml"
+
+
+def _find_example_config() -> Path:
+    """Locate config.example.yaml in both development and .app bundle contexts."""
+    # Development: two levels up from this file → project root
+    dev_path = Path(__file__).resolve().parent.parent / "config.example.yaml"
+    if dev_path.exists():
+        return dev_path
+
+    # py2app bundle: RESOURCEPATH points to Contents/Resources/
+    resource_path = os.environ.get("RESOURCEPATH")
+    if resource_path:
+        bundle_path = Path(resource_path) / "config.example.yaml"
+        if bundle_path.exists():
+            return bundle_path
+
+    return dev_path  # fallback; ensure_config handles missing file gracefully
+
+
+EXAMPLE_CONFIG = _find_example_config()
 
 # A TunnelKey uniquely identifies a tunnel on this machine: (host, local_port).
 TunnelKey = tuple[str, int]
@@ -69,7 +89,8 @@ def ensure_config() -> bool:
             "  - name: example\n"
             "    host: example.com\n"
             "    ports:\n"
-            "      - port: 8080\n"
+            "      - port: 8080\n",
+            encoding="utf-8",
         )
     return False
 
@@ -80,7 +101,7 @@ def load_config() -> Config:
     Raises :class:`yaml.YAMLError` on parse failure and
     :class:`KeyError`/:class:`ValueError` on schema violations.
     """
-    raw: dict[str, Any] = yaml.safe_load(CONFIG_PATH.read_text()) or {}
+    raw: dict[str, Any] = yaml.safe_load(CONFIG_PATH.read_text(encoding="utf-8")) or {}
     servers: list[ServerEntry] = []
     for srv in raw.get("servers", []):
         name = str(srv["name"])
