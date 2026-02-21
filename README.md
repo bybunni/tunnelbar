@@ -2,10 +2,14 @@
 
 A macOS menubar app that manages SSH tunnels. Click a port under a server name to toggle that tunnel on or off.
 
+<p align="center">
+  <img src="assets/screenshot.png" alt="Tunnelbar menubar dropdown" width="300">
+</p>
+
 ## Install
 
 ```bash
-git clone <repo-url> && cd tunnelbar
+git clone https://github.com/bybunni/tunnelbar.git && cd tunnelbar
 make install   # runs uv sync
 ```
 
@@ -40,7 +44,7 @@ servers:
 uv run tunnelbar
 ```
 
-The menubar shows **⚡** when idle and **🟢** when any tunnel is active. Click a port to toggle its tunnel. Use **↻ Reload Config** after editing the YAML and **✎ Edit Config** to open it.
+The menubar icon is an arch outline when idle and fills in when any tunnel is active. Click a port to toggle its tunnel. Use **Reload Config** after editing the YAML and **Edit Config** to open it.
 
 ## Start on login
 
