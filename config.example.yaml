@@ -1,0 +1,24 @@
+# Tunnelbar SSH Tunnel Manager Configuration
+# Place this file at ~/.config/tunnelbar/config.yaml
+#
+# Each server entry specifies an SSH host and ports to forward.
+# The host value should work with `ssh <host>` directly — configure
+# authentication, jump hosts, etc. in your ~/.ssh/config.
+#
+# - port: the remote port to forward
+# - local_port: (optional) the local port to bind; defaults to same as port
+
+servers:
+  - name: remote.dev
+    host: remote.dev
+    ports:
+      - port: 3000
+      - port: 8080
+      - port: 5432
+        local_port: 15432
+
+  - name: thirtysixty
+    host: thirtysixty
+    ports:
+      - port: 3000
+      - port: 8888
