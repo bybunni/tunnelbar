@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+from pathlib import Path
 
 import rumps
 
@@ -21,14 +22,15 @@ from .tunnel import TunnelManager
 
 log = logging.getLogger(__name__)
 
-ICON_IDLE = "\u26a1"        # ⚡
-ICON_ACTIVE = "\U0001f7e2"  # 🟢
+_RESOURCES = Path(__file__).resolve().parent / "resources"
+ICON_IDLE = str(_RESOURCES / "icon_idle.png")
+ICON_ACTIVE = str(_RESOURCES / "icon_active.png")
 HEALTH_CHECK_INTERVAL = 10  # seconds
 
 
 class TunnelbarApp(rumps.App):
     def __init__(self) -> None:
-        super().__init__(name="Tunnelbar", title=ICON_IDLE, quit_button=None)
+        super().__init__(name="Tunnelbar", icon=ICON_IDLE, template=True, quit_button=None)
         self.manager = TunnelManager()
         self.config: Config = Config()
         self._menu_items: dict[TunnelKey, rumps.MenuItem] = {}
@@ -113,7 +115,7 @@ class TunnelbarApp(rumps.App):
         return toggle
 
     def _update_icon(self) -> None:
-        self.title = ICON_ACTIVE if self.manager.has_active else ICON_IDLE
+        self.icon = ICON_ACTIVE if self.manager.has_active else ICON_IDLE
 
     # ------------------------------------------------------------------ timer
 

@@ -14,3 +14,6 @@ dependencies = [
 
 [project.scripts]
 tunnelbar = "tunnelbar.app:main"
+
+[tool.setuptools.package-data]
+tunnelbar = ["resources/*.png"]
