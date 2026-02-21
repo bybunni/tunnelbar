@@ -42,12 +42,16 @@ jobs:
       - name: Build .app bundle
         run: .venv/bin/python setup.py py2app
 
+      - name: Ad-hoc sign the app
+        run: codesign --force --deep --sign - dist/Tunnelbar.app
+
       - name: Verify build
         run: |
           test -d dist/Tunnelbar.app
           BUILT_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" dist/Tunnelbar.app/Contents/Info.plist)
           echo "Bundle version: $BUILT_VERSION"
           test "$BUILT_VERSION" = "${{ steps.version.outputs.version }}"
+          codesign --verify dist/Tunnelbar.app
 
       - name: Create zip archive
         run: |
@@ -62,7 +66,7 @@ jobs:
             ## Installation
             1. Download the zip below
             2. Extract and move `Tunnelbar.app` to `/Applications`
-            3. On first launch: right-click → Open (or `xattr -cr Tunnelbar.app`)
+            3. On first launch: right-click → Open to allow it past Gatekeeper
             4. Configure at `~/.config/tunnelbar/config.yaml`
 
             Requires macOS 14+ (Apple Silicon) and SSH configured in `~/.ssh/config`.
