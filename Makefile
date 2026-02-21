@@ -1,4 +1,4 @@
-.PHONY: install plist unplist app icns clean-app
+.PHONY: install plist unplist app icns clean-app release
 
 PLIST_NAME := com.tunnelbar.agent
 PLIST_DIR  := $(HOME)/Library/LaunchAgents
@@ -61,3 +61,11 @@ app: icns
 clean-app:
 	-xattr -rc dist/ 2>/dev/null
 	rm -rf build/ dist/ .eggs/
+
+release:
+	@test -n "$(VERSION)" || (echo "Usage: make release VERSION=0.2.0" && exit 1)
+	sed -i '' 's/^version = .*/version = "$(VERSION)"/' pyproject.toml
+	git add pyproject.toml
+	git commit -m "Bump version to $(VERSION)"
+	git tag "v$(VERSION)"
+	@echo "Tagged v$(VERSION). Run: git push origin main --tags"

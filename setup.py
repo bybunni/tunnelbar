@@ -3,12 +3,14 @@
 Run with: .venv/bin/python setup.py py2app
 """
 
+import sys
+import tomllib
+from pathlib import Path
+
 from setuptools import setup
 
 # py2app 0.28+ rejects install_requires, but setuptools 82+ populates it
 # from pyproject.toml [project.dependencies].  Clear it before py2app sees it.
-import sys
-
 if "py2app" in sys.argv:
     import py2app.build_app
 
@@ -19,6 +21,14 @@ if "py2app" in sys.argv:
         _orig_finalize(self)
 
     py2app.build_app.py2app.finalize_options = _patched_finalize
+
+
+def _get_version() -> str:
+    with open(Path(__file__).parent / "pyproject.toml", "rb") as f:
+        return tomllib.load(f)["project"]["version"]
+
+
+_VERSION = _get_version()
 
 APP = ["run_tunnelbar.py"]
 DATA_FILES = ["config.example.yaml"]
@@ -31,8 +41,8 @@ OPTIONS = {
         "CFBundleName": "Tunnelbar",
         "CFBundleDisplayName": "Tunnelbar",
         "CFBundleIdentifier": "com.tunnelbar.app",
-        "CFBundleVersion": "0.1.0",
-        "CFBundleShortVersionString": "0.1.0",
+        "CFBundleVersion": _VERSION,
+        "CFBundleShortVersionString": _VERSION,
         "LSUIElement": True,
         "NSHumanReadableCopyright": "MIT License",
         "LSEnvironment": {

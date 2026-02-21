@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build macOS app
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          TAG="${GITHUB_REF#refs/tags/v}"
+          echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          echo "Building version: $TAG"
+
+      - name: Set version in pyproject.toml
+        run: |
+          sed -i '' "s/^version = .*/version = \"${{ steps.version.outputs.version }}\"/" pyproject.toml
+          grep '^version' pyproject.toml
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Set up Python and install dependencies
+        run: |
+          uv python install 3.11
+          uv sync --extra dev --python 3.11
+
+      - name: Build .app bundle
+        run: .venv/bin/python setup.py py2app
+
+      - name: Verify build
+        run: |
+          test -d dist/Tunnelbar.app
+          BUILT_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" dist/Tunnelbar.app/Contents/Info.plist)
+          echo "Bundle version: $BUILT_VERSION"
+          test "$BUILT_VERSION" = "${{ steps.version.outputs.version }}"
+
+      - name: Create zip archive
+        run: |
+          cd dist
+          zip -r -y "Tunnelbar-v${{ steps.version.outputs.version }}-macos-arm64.zip" Tunnelbar.app
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "Tunnelbar v${{ steps.version.outputs.version }}"
+          body: |
+            ## Installation
+            1. Download the zip below
+            2. Extract and move `Tunnelbar.app` to `/Applications`
+            3. On first launch: right-click → Open (or `xattr -cr Tunnelbar.app`)
+            4. Configure at `~/.config/tunnelbar/config.yaml`
+
+            Requires macOS 14+ (Apple Silicon) and SSH configured in `~/.ssh/config`.
+          files: |
+            dist/Tunnelbar-v${{ steps.version.outputs.version }}-macos-arm64.zip
